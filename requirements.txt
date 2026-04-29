@@ -6,3 +6,4 @@ django>=4.2
 reportlab>=4.0
 qrcode[pil]>=7.4
 Pillow>=10.0
+whitenoise
