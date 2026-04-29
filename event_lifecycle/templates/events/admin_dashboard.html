@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+.tab-content { padding-top: 20px; }
+.status-btn { min-width: 90px; font-size: .8rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-primary"></i>Admin Dashboard</h3>
+  <div class="d-flex gap-3 small text-muted">
+    Registered: <strong id="s-reg">—</strong>
+    Attended: <strong id="s-att">—</strong>
+    Certs: <strong id="s-cert">—</strong>
+  </div>
+</div>
+
+<ul class="nav nav-tabs" id="dashTabs">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-participants">Participants</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-updates">Post Update</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-schedule">Schedule</button></li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- PARTICIPANTS TAB -->
+  <div class="tab-pane fade show active" id="tab-participants">
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Student ID</th><th>Name</th><th>Email</th><th>Event</th>
+              <th>Txn ID</th><th>Receipt</th><th>Verified</th><th>Attendance</th>
+              <th>Feedback</th><th>Certificate</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in participants %}
+            <tr id="row-{{ p.pk }}">
+              <td><code>{{ p.student_id }}</code></td>
+              <td>{{ p.name }}</td>
+              <td><small>{{ p.email }}</small></td>
+              <td><small>{{ p.event.name }}</small></td>
+              <td><code>{{ p.transaction_id }}</code></td>
+              <td>
+                {% if p.receipt %}
+                <a href="{{ p.receipt.url }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark"></i></a>
+                {% endif %}
+              </td>
+              <td>
+                <button class="btn btn-sm status-btn verify-btn {% if p.transaction_verified %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                  data-pk="{{ p.pk }}" data-url="{% url 'verify_transaction' p.pk %}">
+                  <span class="verify-label">{% if p.transaction_verified %}✅ Verified{% else %}⬜ Verify{% endif %}</span>
+                </button>
+              </td>
+              <td>
+                <button class="btn btn-sm status-btn attend-btn {% if p.attendance %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                  data-pk="{{ p.pk }}" data-url="{% url 'toggle_attendance' p.pk %}">
+                  <span class="attend-label">{% if p.attendance %}✅ Present{% else %}⬜ Absent{% endif %}</span>
+                </button>
+              </td>
+              <td>
+                {% if p.feedback_submitted %}
+                <span class="badge bg-success">{{ p.feedback_rating }}/5</span>
+                {% else %}
+                <span class="badge bg-secondary">Pending</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if p.certificate_eligible %}
+                <span class="badge bg-success">Eligible</span>
+                {% else %}
+                <span class="badge bg-warning text-dark">Not yet</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'submit_feedback' p.token %}" class="btn btn-sm btn-outline-primary" target="_blank">Feedback</a>
+                {% if p.certificate_eligible %}
+                <a href="{% url 'certificate' p.token %}" class="btn btn-sm btn-success ms-1"><i class="bi bi-download"></i></a>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="11" class="text-center text-muted py-4">No participants yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST UPDATE TAB -->
+  <div class="tab-pane fade" id="tab-updates">
+    <div class="row g-4">
+      {% for event in events %}
+      <div class="col-lg-6">
+        <div class="card p-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-megaphone me-2 text-primary"></i>{{ event.name }}</h6>
+          <form class="update-form" data-event="{{ event.pk }}">
+            {% csrf_token %}
+            <div class="mb-2">
+              <input type="text" name="title" class="form-control" placeholder="Update title" required>
+            </div>
+            <div class="mb-2">
+              <textarea name="message" class="form-control" rows="3" placeholder="What's happening now..." required></textarea>
+            </div>
+            <div class="form-check mb-3">
+              <input type="checkbox" name="is_important" class="form-check-input" id="imp-{{ event.pk }}">
+              <label class="form-check-label" for="imp-{{ event.pk }}">Mark as important</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-send me-2"></i>Post Update</button>
+          </form>
+
+          <hr>
+          <div id="updates-{{ event.pk }}">
+            {% for u in event.updates.all|slice:":5" %}
+            <div class="alert {% if u.is_important %}alert-danger{% else %}alert-info{% endif %} py-2 mb-2">
+              <div class="d-flex justify-content-between">
+                <strong>{{ u.title }}</strong>
+                <small>{{ u.posted_at|date:"g:i A" }}</small>
+              </div>
+              <small>{{ u.message }}</small>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- SCHEDULE TAB -->
+  <div class="tab-pane fade" id="tab-schedule">
+    {% for event in events %}
+    <div class="card p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>{{ event.name }} — Schedule</h6>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead class="table-light">
+            <tr><th>Time</th><th>Title</th><th>Speaker</th><th>Status</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for item in event.schedule.all %}
+            <tr>
+              <td>{{ item.time|time:"g:i A" }}</td>
+              <td>{{ item.title }}</td>
+              <td>{{ item.speaker|default:"—" }}</td>
+              <td>
+                {% if item.is_current %}
+                <span class="badge bg-success">● LIVE</span>
+                {% else %}
+                <span class="badge bg-secondary">Upcoming</span>
+                {% endif %}
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary mark-current-btn"
+                  data-url="{% url 'mark_schedule_current' item.pk %}">
+                  Set Live
+                </button>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-muted">No schedule items. Add them via Django Admin.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/ajax_toggle.js"></script>
+<script>
+// Stats
+function fetchStats() {
+  fetch('/api/stats/').then(r => r.json()).then(d => {
+    document.getElementById('s-reg').textContent = d.total_registered;
+    document.getElementById('s-att').textContent = d.total_attended;
+    document.getElementById('s-cert').textContent = d.total_certificates;
+  });
+}
+fetchStats(); setInterval(fetchStats, 15000);
+
+// Post update forms
+document.querySelectorAll('.update-form').forEach(form => {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const eventPk = this.dataset.event;
+    const data = new FormData(this);
+    fetch(`/event/${eventPk}/post-update/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': data.get('csrfmiddlewaretoken') },
+      body: data
+    }).then(r => r.json()).then(u => {
+      const container = document.getElementById('updates-' + eventPk);
+      const div = document.createElement('div');
+      div.className = 'alert ' + (u.is_important ? 'alert-danger' : 'alert-info') + ' py-2 mb-2';
+      div.innerHTML = `<div class="d-flex justify-content-between"><strong>${u.title}</strong><small>${u.posted_at}</small></div><small>${u.message}</small>`;
+      container.prepend(div);
+      form.reset();
+    });
+  });
+});
+
+// Mark schedule current
+document.querySelectorAll('.mark-current-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    fetch(this.dataset.url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+    }).then(() => location.reload());
+  });
+});
+</script>
+{% endblock %}

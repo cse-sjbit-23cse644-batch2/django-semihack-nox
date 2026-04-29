@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}{{ event.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.hero-detail { background: linear-gradient(135deg,#1a3c8f,#0d2260); color:white; border-radius:16px; padding:48px 40px; }
+.timeline-item { border-left:3px solid #1a3c8f; padding-left:16px; margin-bottom:18px; position:relative; }
+.timeline-item.active { border-color:#c9a84c; background:#fffbf0; border-radius:0 8px 8px 0; padding:12px 16px; }
+.update-card { border-left:4px solid #1a3c8f; }
+.update-card.important { border-color:#dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-detail mb-4">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <span class="badge mb-3" style="background:#c9a84c">{{ event.organizer }}</span>
+      <h1 class="fw-bold">{{ event.name }}</h1>
+      {% if event.tagline %}<p class="lead" style="color:rgba(255,255,255,.8)">{{ event.tagline }}</p>{% endif %}
+      <p style="color:rgba(255,255,255,.7)">{{ event.description }}</p>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <span class="badge bg-white text-dark px-3 py-2"><i class="bi bi-calendar3 me-1"></i>{{ event.date|date:"F d, Y" }}</span>
+        <span class="badge bg-white text-dark px-3 py-2"><i class="bi bi-clock me-1"></i>{{ event.start_time|time:"g:i A" }} – {{ event.end_time|time:"g:i A" }}</span>
+        <span class="badge bg-white text-dark px-3 py-2"><i class="bi bi-geo-alt me-1"></i>{{ event.venue }}</span>
+        <span class="badge bg-white text-dark px-3 py-2"><i class="bi bi-people me-1"></i>{{ event.spots_left }} spots left</span>
+      </div>
+      <a href="{% url 'register' event.pk %}" class="btn btn-lg mt-4"
+         style="background:#c9a84c;color:white;font-weight:700;border:none">
+        <i class="bi bi-pencil-square me-2"></i>Register Now
+      </a>
+    </div>
+    <div class="col-lg-4 text-center mt-4 mt-lg-0">
+      <div style="background:white;border-radius:12px;padding:16px;display:inline-block">
+        <p class="small text-muted mb-1 fw-semibold">Scan to share</p>
+        {% if qr_data %}<img src="data:image/png;base64,{{ qr_data }}" style="width:140px">{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Schedule -->
+  <div class="col-lg-6">
+    <div class="card p-4 h-100">
+      <h5 class="fw-bold mb-4"><i class="bi bi-clock-history me-2 text-primary"></i>Schedule</h5>
+      <div id="schedule-list">
+        {% for item in schedule %}
+        <div class="timeline-item {% if item.is_current %}active{% endif %}" id="sched-{{ item.pk }}">
+          <span class="badge {% if item.is_current %}badge-gold{% else %}bg-primary{% endif %}">{{ item.time|time:"g:i A" }}</span>
+          {% if item.is_current %}<span class="badge bg-success ms-1 blink">● LIVE NOW</span>{% endif %}
+          <div class="fw-semibold mt-1">{{ item.title }}</div>
+          {% if item.speaker %}<div class="text-muted small"><i class="bi bi-person me-1"></i>{{ item.speaker }}</div>{% endif %}
+          {% if item.description %}<div class="text-muted small">{{ item.description }}</div>{% endif %}
+        </div>
+        {% empty %}
+        <p class="text-muted">Schedule will be posted soon.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Updates -->
+  <div class="col-lg-6">
+    <div class="card p-4 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-megaphone me-2 text-primary"></i>Live Updates</h5>
+        <span class="badge bg-success" id="live-badge">● Live</span>
+      </div>
+      <div id="updates-list">
+        {% for update in updates %}
+        <div class="card mb-2 p-3 update-card {% if update.is_important %}important{% endif %}">
+          <div class="d-flex justify-content-between">
+            <strong>{% if update.is_important %}<i class="bi bi-exclamation-triangle text-danger me-1"></i>{% endif %}{{ update.title }}</strong>
+            <small class="text-muted">{{ update.posted_at|date:"M d, g:i A" }}</small>
+          </div>
+          <div class="mt-1 text-muted">{{ update.message }}</div>
+        </div>
+        {% empty %}
+        <p class="text-muted" id="no-updates">No updates yet. Check back during the event.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Venue Info -->
+{% if event.venue_address %}
+<div class="card p-4 mt-4">
+  <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2 text-primary"></i>Venue</h5>
+  <p class="mb-0"><strong>{{ event.venue }}</strong><br>{{ event.venue_address }}</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let lastUpdateId = {{ updates.0.id|default:0 }};
+
+function pollUpdates() {
+  fetch('/event/{{ event.pk }}/updates/')
+    .then(r => r.json())
+    .then(data => {
+      // Update schedule
+      data.schedule.forEach(s => {
+        const el = document.getElementById('sched-' + s.id);
+        if (el) {
+          el.classList.toggle('active', s.is_current);
+        }
+      });
+
+      // Prepend new updates
+      const list = document.getElementById('updates-list');
+      const noMsg = document.getElementById('no-updates');
+      data.updates.forEach(u => {
+        if (u.id > lastUpdateId) {
+          lastUpdateId = u.id;
+          if (noMsg) noMsg.remove();
+          const div = document.createElement('div');
+          div.className = 'card mb-2 p-3 update-card' + (u.is_important ? ' important' : '');
+          div.innerHTML = `<div class="d-flex justify-content-between">
+            <strong>${u.is_important ? '<i class="bi bi-exclamation-triangle text-danger me-1"></i>' : ''}${u.title}</strong>
+            <small class="text-muted">${u.posted_at}</small>
+          </div><div class="mt-1 text-muted">${u.message}</div>`;
+          list.prepend(div);
+        }
+      });
+    });
+}
+setInterval(pollUpdates, 10000);
+</script>
+<style>
+.blink { animation: blink 1s step-start infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.badge-gold { background: #c9a84c; color: white; }
+</style>
+{% endblock %}

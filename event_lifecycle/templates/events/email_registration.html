@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Segoe UI,sans-serif;background:#f4f6fb;margin:0;padding:20px">
+<div style="max-width:600px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.1)">
+  <div style="background:linear-gradient(135deg,#1a3c8f,#0d2260);padding:32px;text-align:center">
+    <h1 style="color:white;margin:0;font-size:1.8rem">Registration Confirmed!</h1>
+    <p style="color:rgba(255,255,255,.8);margin:8px 0 0">{{ participant.event.name }}</p>
+  </div>
+  <div style="padding:32px">
+    <p style="font-size:1.1rem">Hi <strong>{{ participant.name }}</strong>,</p>
+    <p>You are successfully registered for <strong>{{ participant.event.name }}</strong>.</p>
+
+    <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="padding:6px 0;color:#666">Date</td><td style="font-weight:600">{{ participant.event.date }}</td></tr>
+        <tr><td style="padding:6px 0;color:#666">Time</td><td style="font-weight:600">{{ participant.event.start_time }} – {{ participant.event.end_time }}</td></tr>
+        <tr><td style="padding:6px 0;color:#666">Venue</td><td style="font-weight:600">{{ participant.event.venue }}</td></tr>
+        <tr><td style="padding:6px 0;color:#666">Student ID</td><td style="font-weight:600">{{ participant.student_id }}</td></tr>
+        <tr><td style="padding:6px 0;color:#666">Transaction Ref</td><td style="font-weight:600">{{ participant.transaction_id }}</td></tr>
+      </table>
+    </div>
+
+    <div style="background:#e8f4fd;border-radius:8px;padding:16px;margin:20px 0">
+      <h4 style="margin:0 0 12px;color:#1a3c8f">What's Next?</h4>
+      <ol style="margin:0;padding-left:20px;color:#444">
+        <li style="margin-bottom:8px">Attend the event on <strong>{{ participant.event.date }}</strong></li>
+        <li style="margin-bottom:8px">Get your attendance marked at the venue</li>
+        <li style="margin-bottom:8px">Submit your feedback after the event</li>
+        <li>Download your certificate!</li>
+      </ol>
+    </div>
+
+    <div style="text-align:center;margin:24px 0">
+      <a href="{{ event_url }}" style="background:#1a3c8f;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">
+        View Event Page & Live Updates
+      </a>
+    </div>
+
+    <p style="color:#888;font-size:.85rem;text-align:center;margin-top:24px">
+      This is an automated email from EventCert. Please do not reply.
+    </p>
+  </div>
+</div>
+</body>
+</html>

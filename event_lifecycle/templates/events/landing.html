@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% block title %}EventCert — Academic Events{% endblock %}
+
+{% block extra_head %}
+<style>
+.hero {
+  background: linear-gradient(135deg, #1a3c8f 0%, #0d2260 60%, #c9a84c 100%);
+  color: white;
+  border-radius: 16px;
+  padding: 60px 40px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: rgba(201,168,76,.15);
+}
+.event-card {
+  transition: transform .2s;
+}
+.event-card:hover {
+  transform: translateY(-4px);
+}
+.stat-box {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+}
+.stat-num {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a3c8f;
+}
+.qr-box {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if featured %}
+<div class="hero mb-5">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <span class="badge mb-3" style="background:var(--gold);font-size:.9rem;padding:6px 14px;">
+        <i class="bi bi-lightning-fill me-1"></i>{{ featured.organizer }}
+      </span>
+
+      <h1 class="display-4 fw-bold mb-2">{{ featured.name }}</h1>
+
+      {% if featured.tagline %}
+      <p class="lead mb-3" style="color:rgba(255,255,255,.85)">
+        {{ featured.tagline }}
+      </p>
+      {% endif %}
+
+      <p style="color:rgba(255,255,255,.75)">
+        {{ featured.description|truncatewords:40 }}
+      </p>
+
+      <div class="row g-3 mt-2 mb-4">
+        <div class="col-auto">
+          <span class="badge bg-white text-dark fs-6 px-3 py-2">
+            <i class="bi bi-calendar3 me-2"></i>{{ featured.date }}
+          </span>
+        </div>
+
+        <div class="col-auto">
+          <span class="badge bg-white text-dark fs-6 px-3 py-2">
+            <i class="bi bi-clock me-2"></i>
+            {{ featured.start_time }} – {{ featured.end_time }}
+          </span>
+        </div>
+
+        <div class="col-auto">
+          <span class="badge bg-white text-dark fs-6 px-3 py-2">
+            <i class="bi bi-geo-alt me-2"></i>{{ featured.venue }}
+          </span>
+        </div>
+
+        <div class="col-auto">
+          <span class="badge bg-white text-dark fs-6 px-3 py-2">
+            <i class="bi bi-people me-2"></i>{{ featured.spots_left }} spots left
+          </span>
+        </div>
+      </div>
+
+      <a href="{% url 'register' featured.pk %}" class="btn btn-lg me-3"
+         style="background:var(--gold);color:white;font-weight:700;">
+        Register Now
+      </a>
+
+      <a href="{% url 'event_detail' featured.pk %}" class="btn btn-lg btn-outline-light">
+        View Details
+      </a>
+    </div>
+
+    <div class="col-lg-4 text-center mt-4 mt-lg-0">
+      <div class="qr-box d-inline-block">
+        <p class="small text-muted mb-2 fw-semibold">Scan to view event</p>
+        {% if qr_data %}
+        <img src="data:image/png;base64,{{ qr_data }}" alt="QR Code" style="width:160px;">
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-5" id="stats-row">
+  <div class="col-6 col-md-3">
+    <div class="stat-box">
+      <div class="stat-num" id="stat-registered">—</div>
+      <div class="text-muted small">Registered</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-box">
+      <div class="stat-num" id="stat-attended">—</div>
+      <div class="text-muted small">Attended</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-box">
+      <div class="stat-num" id="stat-verified">—</div>
+      <div class="text-muted small">Verified</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-box">
+      <div class="stat-num" id="stat-certs">—</div>
+      <div class="text-muted small">Certificates</div>
+    </div>
+  </div>
+</div>
+
+<div class="card p-4 mb-5">
+  <h4 class="fw-bold mb-4">
+    <i class="bi bi-calendar-event me-2 text-primary"></i>All Events
+  </h4>
+
+  <div class="row g-4">
+    {% for event in events %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card event-card h-100 p-3">
+
+        <h5 class="fw-bold">{{ event.name }}</h5>
+
+        {% if event.tagline %}
+        <p class="text-muted">{{ event.tagline }}</p>
+        {% endif %}
+
+        <p>{{ event.description|truncatewords:15 }}</p>
+
+        <p>
+          <i class="bi bi-calendar"></i> {{ event.date }}
+        </p>
+
+        <p>
+          <i class="bi bi-clock"></i>
+          {{ event.start_time }} - {{ event.end_time }}
+        </p>
+
+        <p>
+          <i class="bi bi-geo-alt"></i> {{ event.venue }}
+        </p>
+
+        <p class="text-muted small">
+          {{ event.spots_left }} spots left
+        </p>
+
+        <a href="{% url 'register' event.pk %}" class="btn btn-primary w-100 mb-2">
+          Register
+        </a>
+
+        <a href="{% url 'event_detail' event.pk %}" class="btn btn-outline-primary w-100">
+          Details
+        </a>
+
+      </div>
+    </div>
+    {% empty %}
+    <p>No events found.</p>
+    {% endfor %}
+  </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-calendar-x" style="font-size:4rem;color:#ccc"></i>
+  <h3 class="mt-3 text-muted">No active events</h3>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fetchStats() {
+  fetch('/api/stats/')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('stat-registered').textContent = d.total_registered;
+      document.getElementById('stat-attended').textContent = d.total_attended;
+      document.getElementById('stat-verified').textContent = d.total_verified;
+      document.getElementById('stat-certs').textContent = d.total_certificates;
+    });
+}
+
+fetchStats();
+setInterval(fetchStats, 15000);
+</script>
+{% endblock %}

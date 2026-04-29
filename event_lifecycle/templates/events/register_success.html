@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Registration Successful{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-7 col-lg-5">
+    <div class="card p-5 text-center">
+      <i class="bi bi-check-circle-fill text-success" style="font-size:4rem"></i>
+      <h3 class="mt-3 fw-bold">You're Registered!</h3>
+      <p class="text-muted">Hi <strong>{{ participant.name }}</strong>, your registration for <strong>{{ participant.event.name }}</strong> is confirmed.</p>
+
+      <div class="alert alert-info text-start mt-2">
+        <i class="bi bi-envelope me-2"></i>A confirmation email has been sent to <strong>{{ participant.email }}</strong>
+      </div>
+
+      <div class="card p-3 mt-3" style="background:#f8f9fa">
+        <div class="row text-start g-2">
+          <div class="col-6"><small class="text-muted">Date</small><div class="fw-semibold">{{ participant.event.date|date:"F d, Y" }}</div></div>
+          <div class="col-6"><small class="text-muted">Time</small><div class="fw-semibold">{{ participant.event.start_time|time:"g:i A" }}</div></div>
+          <div class="col-12"><small class="text-muted">Venue</small><div class="fw-semibold">{{ participant.event.venue }}</div></div>
+          <div class="col-12"><small class="text-muted">Student ID</small><div class="fw-semibold">{{ participant.student_id }}</div></div>
+        </div>
+      </div>
+
+      {% if qr_data %}
+      <div class="mt-4">
+        <p class="small text-muted mb-2">Scan to follow live event updates</p>
+        <img src="data:image/png;base64,{{ qr_data }}" style="width:140px">
+      </div>
+      {% endif %}
+
+      <div class="mt-4">
+        <h6 class="fw-bold text-muted">What's Next?</h6>
+        <div class="d-flex flex-column gap-2 text-start mt-2">
+          <div class="d-flex align-items-center gap-2"><span class="badge bg-primary rounded-circle">1</span> Attend the event on {{ participant.event.date|date:"M d" }}</div>
+          <div class="d-flex align-items-center gap-2"><span class="badge bg-secondary rounded-circle">2</span> Get your attendance marked</div>
+          <div class="d-flex align-items-center gap-2"><span class="badge bg-secondary rounded-circle">3</span> Submit feedback after the event</div>
+          <div class="d-flex align-items-center gap-2"><span class="badge bg-success rounded-circle">4</span> Download your certificate!</div>
+        </div>
+      </div>
+
+      <a href="{% url 'event_detail' participant.event.pk %}" class="btn btn-primary mt-4">
+        <i class="bi bi-calendar-event me-2"></i>View Event Page
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
