@@ -1,79 +1,93 @@
-# Django-semihack-starter
-Starter template for semi-hackathon
-# 🚀 Django Semi-Hackathon: [Team Name]
+# Event Lifecycle & Certification System
 
-## 📋 Project Details
-- **Theme**: [e.g., TH-03: Elective Choice System]
-- **Team Members**: @student1, @student2, @student3, @student4
-- **Live URL**: [To be filled after deployment]
+A Django web application for managing academic events: student registration with transaction verification → QR/attendance tracking → feedback → conditional PDF certificate issuance.
 
-## ✅ Submission Checklist
-- [ ] Code runs with `pip install -r requirements.txt`
-- [ ] `DEBUG=False` in production settings
-- [ ] Working AJAX endpoint (tested live)
-- [ ] CSV/PDF export functional
-- [ ] CO-SDG mapping table completed below
-- [ ] 150-word SDG justification included
+---
 
-## 🎯 CO-SDG Mapping Table
-| Course Outcome | How This Project Demonstrates It | SDG Target Addressed |
-|---------------|----------------------------------|---------------------|
-| CO1: MVT Architecture | [Brief explanation] | SDG 4.5 |
-| CO2: Models & Forms | [Brief explanation] | SDG 9.5 |
-| ... | ... | ... |
+## Quick Start
 
-## 📦 Setup Instructions
 ```bash
-git clone [your-repo-url]
-cd [repo-name]
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# 1. Install dependencies
 pip install -r requirements.txt
+
+# 2. Run migrations
 python manage.py migrate
+
+# 3. Create a superuser (for admin dashboard)
+python manage.py createsuperuser
+
+# 4. Start the server
 python manage.py runserver
 ```
-### ✅ Pre-Deploy Checklist
-- [ ] `DEBUG = False` in `settings.py`
-- [ ] `STATIC_ROOT` configured
-- [ ] `ALLOWED_HOSTS` includes cloud domain
-- [ ] `gunicorn` in `requirements.txt`
-- [ ] Local `python manage.py collectstatic` ran successfully
-## 🚀 Deployment Guide (Free Tier: Render)
-*Follow these steps on Event Day to make your app publicly accessible for judging.*
 
-1. **Sign Up & Connect**
-   - Go to [render.com](https://render.com) → Sign up with GitHub
-   - Authorize Render to access your repos
+Then visit `http://127.0.0.1:8000/`.
 
-2. **Create Web Service**
-   - Click `New +` → `Web Service` → Connect this repo
-   - Fill in:
-     - **Name**: `team-xyz-app`
-     - **Region**: `Oregon` or `Frankfurt` (closest to India)
-     - **Branch**: `main`
-     - **Build Command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-     - **Start Command**: `gunicorn project_name.wsgi` *(replace `project_name` with your actual Django folder)*
+---
 
-3. **Environment Variables (Critical)**
-   Click `Advanced` → `Add Environment Variable`:
-   | Key | Value |
-   |-----|-------|
-   | `SECRET_KEY` | Generate at [miniwebtool.com/django-secret-key-generator](https://miniwebtool.com/django-secret-key-generator/) |
-   | `DEBUG` | `False` |
-   | `ALLOWED_HOSTS` | `*.onrender.com, localhost, 127.0.0.1` |
+## Verification Checklist
 
-4. **Deploy & Verify**
-   - Click `Create Web Service` → Wait 2–4 mins for build
-   - Once live, copy the `https://...onrender.com` URL
-   - ✅ Test: Open URL, check CSS/JS loads, test AJAX endpoint, download CSV/PDF
-   - 📝 Update this `README.md` with your live URL
+| # | Test | Expected |
+|---|------|----------|
+| 1 | `python manage.py runserver` | App loads at http://127.0.0.1:8000 |
+| 2 | Register with valid transaction ID + receipt | Saves to DB, success page shown |
+| 3 | Register with duplicate Student ID or Transaction ID | Error shown, no save |
+| 4 | Upload invalid file type or file > 2MB | Validation error, no save |
+| 5 | Admin toggles attendance button | DB updates, UI reflects change without refresh |
+| 6 | Submit feedback via feedback link | Flag updates, certificate becomes available |
+| 7 | Visit `/certificate/<token>/` with ALL conditions met | PDF downloads |
+| 8 | Visit same URL without all conditions | 403 page with missing conditions listed |
+| 9 | Mobile view | Forms usable on phone screen (Bootstrap 5 responsive) |
 
-### 🚨 Troubleshooting Quick Fixes
-| Issue | Fix |
-|-------|-----|
-| `Application Error` | Ensure `gunicorn` is in `requirements.txt` & `wsgi` path matches your project folder |
-| Broken CSS/JS | Add `STATIC_ROOT = BASE_DIR / "staticfiles"` to `settings.py` |
-| `DisallowedHost` | Verify `ALLOWED_HOSTS` env var or `settings.py` matches your Render domain |
-| DB locked/migrations fail | Free tier uses SQLite by default. It's fine for hackathon demos. No extra config needed. |
+---
 
-> 💡 **Note:** After deployment, every `git push` to `main` auto-triggers a rebuild. No manual server restarts needed.
+## CO–SDG Mapping
+
+| Course Outcome | How This Project Demonstrates It | SDG Target |
+|---|---|---|
+| CO1: MVT Architecture | URL routing for `/register/`, `/dashboard/`, `/certificate/<token>/`, `/feedback/<token>/` endpoints | SDG 4.3 — Equal access to education |
+| CO2: Models & Forms | `Participant` model with `unique=True` constraints + `RegistrationForm` with `clean_transaction_id()`, `clean_student_id()`, file validators | SDG 4.5 — Eliminate disparities |
+| CO3: Template Inheritance | Reusable `base.html` with `{% block content %}` + responsive Bootstrap 5 admin/student views | SDG 4.A — Inclusive learning environments |
+| CO4: Non-HTML Output | ReportLab PDF generation in `utils.py` with conditional gatekeeper logic (attendance + feedback + transaction verified) | SDG 16.10 — Public access to information |
+| CO5: AJAX Integration | Attendance toggle and transaction verification via `fetch()` in `ajax_toggle.js` — no page refresh | SDG 9.C — Universal access to ICT |
+
+---
+
+## SDG Justification
+
+> Our Event Lifecycle & Certification system advances **SDG 4: Quality Education** (Target 4.5) by digitizing academic event management with transparent transaction verification — ensuring equitable access to registration and verified certificates while preventing fraud. The conditional PDF issuance (CO4) supports **SDG 16: Peace, Justice & Strong Institutions** (Target 16.10) by providing tamper-evident certification tied to verified attendance, feedback, and payment. Built with Django's validated forms (CO2) and AJAX-driven attendance (CO5), the system demonstrates responsive, user-centered design that promotes trust, accountability, and inclusive participation in academic activities.
+
+---
+
+## Project Structure
+
+```
+event_lifecycle/
+├── events/
+│   ├── models.py          # Event, Participant models
+│   ├── forms.py           # RegistrationForm, FeedbackForm
+│   ├── views.py           # register(), toggle_attendance(), certificate(), api_stats()
+│   ├── urls.py            # All app routes
+│   ├── utils.py           # generate_pdf() via ReportLab, generate_qr()
+│   ├── validators.py      # File type/size validators
+│   └── admin.py           # Django admin registration
+├── templates/
+│   ├── base.html                          # Bootstrap 5 layout
+│   ├── events/register.html               # Registration form
+│   ├── events/register_success.html
+│   ├── events/admin_dashboard.html        # AJAX attendance/verify dashboard
+│   ├── events/feedback.html
+│   └── events/certificate_blocked.html    # 403 gatekeeper page
+├── static/
+│   └── js/ajax_toggle.js                  # Attendance + verify AJAX
+├── media/
+│   └── receipts/                          # Uploaded receipts (gitignored)
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Bonus Features Implemented
+
+- **Real-time stats counter** — `/api/stats/` polled every 30s on the dashboard
+- **QR code utility** — `generate_qr()` in `utils.py` (ready to use in signals/views)
